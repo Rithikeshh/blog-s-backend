@@ -44,7 +44,9 @@ const login = async (req, res) => {
 const profile = async (req, res) => {
     
     try {
-        const user = await User.findById(req.userId)
+        const user = await User.findById(req.userId).select({
+            password: 0
+        })
         res.status(200).json({ message: "success", details: user });
     } catch (err) {
       res

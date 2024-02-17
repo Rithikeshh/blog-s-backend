@@ -86,11 +86,14 @@ const deleteBlog = async (req, res) => {
 
     try {
         const  blog = await Blog.findById(blogId);
-        await Comment.deleteMany({blog : blogId});
         const isOwner = blog.user.equals(userId);
         
         if (isOwner) {
             const deletedBlog = await Blog.findByIdAndDelete(blogId);
+            await Comment.deleteMany({blog : blogId});
+            await User.findByIdAndUpdate(userId, {
+                $pull : {blogs: blog._id}
+            })
             return res.status(200).json({
                 status: "success",
                 data: deletedBlog
@@ -117,6 +120,17 @@ const addVote = async (req, res) => {
 
     try {
         let blog;
+        // check if the vote already exists for a user on this blog
+        const check = await Blog.findById(blogId).select({
+            votedBy: 1
+        })
+        
+        if(check.votedBy.includes(userId)){
+            return res.status(500).json({
+                status: "failed",
+                message:  'User has already cast their vote'
+            })
+        }
         if(voteType === "upVote"){
 
             blog = await Blog.findByIdAndUpdate(blogId, {
